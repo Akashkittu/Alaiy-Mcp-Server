@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎤 Claude AI Voice Assistant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #e1bee7);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 550px;
+      text-align: center;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 20px;
+      color: #4a148c;
+    }
+
+    textarea {
+      width: 100%;
+      border-radius: 18px;
+      border: none;
+      outline: none;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      font-size: 15px;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 20px;
+      margin-right: 10px;
+      padding: 12px 25px;
+      font-size: 16px;
+      background: #7e57c2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.25s ease, background 0.25s ease;
+      box-shadow: 0 4px 12px rgba(126, 87, 194, 0.3);
+    }
+
+    button:hover {
+      background: #6a44b8;
+      transform: scale(1.05);
+    }
+
+    #themeToggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #7e57c2;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      z-index: 99;
+    }
+
+    .status {
+      margin-top: 20px;
+      font-weight: 500;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    audio {
+      margin-top: 20px;
+      width: 100%;
+      border-radius: 8px;
+      background-color: #f1f1f1;
+    }
+
+    .spinner {
+      border: 4px solid #eee;
+      border-top: 4px solid #7e57c2;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #chatBox {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 10px;
+      background: #f9f3fc;
+      border-radius: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 10px 15px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+      word-wrap: break-word;
+    }
+
+    .user-message {
+      align-self: flex-end;
+      background-color: #d1c4e9;
+      color: #311b92;
+      text-align: right;
+    }
+
+    .claude-message {
+      align-self: flex-start;
+      background-color: #ede7f6;
+      color: #4a148c;
+      text-align: left;
+    }
+
+    /* 🌙 Dark mode styles */
+    body.dark-mode {
+      background: linear-gradient(135deg, #1c1c1c, #2c2c2c);
+      color: #f0f0f0;
+    }
+
+    body.dark-mode .container {
+      background: #2d2d2d;
+      box-shadow: 0 8px 24px rgba(255, 255, 255, 0.05);
+    }
+
+    body.dark-mode textarea {
+      background: #424242;
+      color: #f0f0f0;
+    }
+
+    body.dark-mode #chatBox {
+      background: #3a3a3a;
+    }
+
+    body.dark-mode .message.user-message {
+      background-color: #7e57c2;
+      color: #fff;
+    }
+
+    body.dark-mode .message.claude-message {
+      background-color: #5e35b1;
+      color: #f3e5f5;
+    }
+
+    body.dark-mode #themeToggle {
+      background: #e0e0e0;
+      color: #2c2c2c;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🌗 Theme Toggle -->
+  <button id="themeToggle">🌙 Dark Mode</button>
+
+  <div class="container">
+    <h1>🎤 Claude AI Voice Assistant</h1>
+    <form id="voiceForm">
+      <textarea id="text" rows="5" placeholder="Ask me anything..." required></textarea><br>
+      <button type="submit">🧠 Ask Claude</button>
+      <button type="button" onclick="generateVoice()">🗣️ Generate Voice Only</button>
+      <div class="status hidden" id="statusMessage">
+        <span class="spinner"></span>Processing...
+      </div>
+      <div id="replyText" class="status hidden"></div>
+      <audio id="audioPlayer" controls class="hidden"></audio>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('voiceForm');
+    const statusMsg = document.getElementById('statusMessage');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const replyText = document.getElementById('replyText');
+    const chatBox = document.createElement('div');
+    chatBox.id = "chatBox";
+    form.appendChild(chatBox);
+
+    // 💬 Submit to Claude + TTS
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = document.getElementById('text').value.trim();
+      if (!text) return;
+      await fetchClaudeVoice(text);
+    });
+
+    // 🔊 TTS only
+    async function generateVoice() {
+      const text = document.getElementById('text').value.trim();
+      if (!text) return;
+
+      statusMsg.classList.remove('hidden');
+      replyText.classList.add('hidden');
+      audioPlayer.classList.add('hidden');
+      statusMsg.innerHTML = `<span class="spinner"></span>Generating voice...`;
+
+      try {
+        const res = await fetch(`/speak?text=${encodeURIComponent(text)}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+
+        replyText.textContent = `🗣️ Voice Generated: "${text}"`;
+        replyText.classList.remove('hidden');
+        audioPlayer.src = url;
+        audioPlayer.classList.remove('hidden');
+        statusMsg.innerHTML = '✅ Voice ready!';
+      } catch (err) {
+        console.error(err);
+        statusMsg.innerHTML = '❌ Error generating voice.';
+      }
+    }
+
+    // 🧠 Claude + Voice + Chat history
+    async function fetchClaudeVoice(text) {
+      statusMsg.classList.remove('hidden');
+      replyText.classList.add('hidden');
+      audioPlayer.classList.add('hidden');
+      statusMsg.innerHTML = `<span class="spinner"></span>Talking to Claude...`;
+
+      try {
+        const res = await fetch(`/claude-speak?text=${encodeURIComponent(text)}`);
+        const data = await res.json();
+
+        replyText.textContent = `🤖 Claude: ${data.reply}`;
+        replyText.classList.remove('hidden');
+        audioPlayer.src = data.audio;
+        audioPlayer.classList.remove('hidden');
+        statusMsg.innerHTML = '✅ Claude reply ready!';
+
+        updateChatBox(data.history);
+      } catch (err) {
+        console.error(err);
+        statusMsg.innerHTML = '❌ Error talking to Claude.';
+      }
+    }
+
+    // 💬 Update chat bubble history
+    function updateChatBox(history) {
+      chatBox.innerHTML = '';
+      history.forEach(entry => {
+        const userMsg = document.createElement('div');
+        userMsg.classList.add('message', 'user-message');
+        userMsg.innerHTML = `<strong>👤 You:</strong><br>${entry.user}`;
+
+        const aiMsg = document.createElement('div');
+        aiMsg.classList.add('message', 'claude-message');
+        aiMsg.innerHTML = `<strong>🤖 Claude:</strong><br>${entry.claude}`;
+
+        chatBox.appendChild(userMsg);
+        chatBox.appendChild(aiMsg);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // 🌙 Theme Toggle
+    const themeBtn = document.getElementById('themeToggle');
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      themeBtn.textContent = document.body.classList.contains('dark-mode')
+        ? '☀️ Light Mode'
+        : '🌙 Dark Mode';
+    });
+  </script>
+</body>
+</html>

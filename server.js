@@ -74,16 +74,22 @@ app.post('/whatsapp', async (req, res) => {
   const twiml = new MessagingResponse();
 
   if (mediaUrl && mediaType && mediaType.startsWith('audio')) {
-    // 🎤 Handle voice message
     console.log(`🎤 Voice message received: ${mediaUrl} (${mediaType})`);
-    
-    // Optionally download or transcribe
     twiml.message("🎧 Thanks! I received your voice message.");
   } else if (incomingMsg) {
-    // ✍️ Handle text message
+    // 🧠 Get Claude reply
     const reply = await getClaudeReply(incomingMsg);
-    await sendVoiceMessage(reply);
-    twiml.message(`Claude replied: "${reply}"\n✅ Voice message sent!`);
+
+    // 🔊 Generate voice from reply and save as output.mp3
+    await generateSpeech(reply, 'output.mp3');
+
+    // ✅ Send text reply to user
+    twiml.message(`Claude: "${reply}"\n🔊 Sending voice reply...`);
+
+    
+    setTimeout(async () => {
+      await sendVoiceMessage(reply, 'output.mp3'); // this sends the voice message
+    }, 1000);
   } else {
     twiml.message("❓ Sorry, I couldn't understand your message.");
   }
@@ -91,6 +97,7 @@ app.post('/whatsapp', async (req, res) => {
   res.set('Content-Type', 'text/xml');
   res.send(twiml.toString());
 });
+
 // ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

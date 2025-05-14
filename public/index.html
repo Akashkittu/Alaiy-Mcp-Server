@@ -244,6 +244,8 @@
         replyText.classList.remove('hidden');
         audioPlayer.src = url;
         audioPlayer.classList.remove('hidden');
+        
+
         statusMsg.innerHTML = '✅ Voice ready!';
       } catch (err) {
         console.error(err);
@@ -264,8 +266,10 @@
 
         replyText.textContent = `🤖 Claude: ${data.reply}`;
         replyText.classList.remove('hidden');
-        audioPlayer.src = data.audio;
+        audioPlayer.src = `${data.audio}?t=${Date.now()}`;
+
         audioPlayer.classList.remove('hidden');
+        audioPlayer.play().catch(e => console.warn('Autoplay blocked:', e));
         statusMsg.innerHTML = '✅ Claude reply ready!';
 
         updateChatBox(data.history);

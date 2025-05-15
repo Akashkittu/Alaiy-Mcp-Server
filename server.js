@@ -9,24 +9,25 @@ dotenv.config();
 const generateSpeech = require(path.join(__dirname, 'elevenlabs', 'voice'));
 const getClaudeReply = require(path.join(__dirname, 'elevenlabs', 'claude'));
 const sendVoiceMessage = require(path.join(__dirname, 'elevenlabs', 'twilio'));
+const { telegramHistory } = require('./elevenlabs/telegram'); // ✅ Import telegram chat history
 
 const app = express();
 const PORT = 3000;
 
-// ✅ In-memory chat history (global)
+
 let chatHistory = [];
 
-// ✅ Middleware
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// ✅ Homepage
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ✅ Text to speech via ElevenLabs
+
 app.get('/speak', async (req, res) => {
   const text = req.query.text || 'Hello from ElevenLabs voice!';
   const filePath = await generateSpeech(text);
@@ -40,7 +41,7 @@ app.get('/speak', async (req, res) => {
   res.download(filePath, 'voice.mp3');
 });
 
-// ✅ Claude response + voice + chat history
+
 app.get('/claude-speak', async (req, res) => {
   const text = req.query.text;
   if (!text) return res.status(400).send('Text is required.');
@@ -48,18 +49,26 @@ app.get('/claude-speak', async (req, res) => {
   const lowerText = text.toLowerCase();
   let reply;
 
-  // ✅ Check for WhatsApp history request
   if (lowerText.includes("last whatsapp") || lowerText.includes("previous whatsapp")) {
-    const lastWhatsapp = chatHistory
-      .filter(entry => entry.platform === 'whatsapp')
-      .slice(-5);
-
+    const lastWhatsapp = chatHistory.filter(entry => entry.platform === 'whatsapp').slice(-5);
     if (lastWhatsapp.length === 0) {
       reply = "📭 No previous WhatsApp messages found.";
     } else {
-      reply = `📜 Last ${lastWhatsapp.length} WhatsApp message${lastWhatsapp.length > 1 ? 's' : ''}:\n`;
+      reply = `📜 Last ${lastWhatsapp.length} WhatsApp message${lastWhatsapp.length > 1 ? 's' : ''}:
+`;
       lastWhatsapp.forEach((entry, i) => {
-        reply += `\n${i + 1}. 👤 You: "${entry.user}"\n🤖 Claude: "${entry.claude || 'No reply'}"\n`;
+        reply += `\n${i + 1}. 👤 You: \"${entry.user}\"\n🤖 Claude: \"${entry.claude || 'No reply'}\"\n`;
+      });
+    }
+  } else if (lowerText.includes("last telegram") || lowerText.includes("previous telegram")) {
+    const lastTelegram = telegramHistory.slice(-5);
+    if (lastTelegram.length === 0) {
+      reply = "📭 No previous Telegram messages found.";
+    } else {
+      reply = `📜 Last ${lastTelegram.length} Telegram message${lastTelegram.length > 1 ? 's' : ''}:
+`;
+      lastTelegram.forEach((entry, i) => {
+        reply += `\n${i + 1}. 👤 You: \"${entry.user}\"\n🤖 Claude: \"${entry.claude || 'No reply'}\"\n`;
       });
     }
   } else {
@@ -67,8 +76,6 @@ app.get('/claude-speak', async (req, res) => {
   }
 
   const voicePath = await generateSpeech(reply, 'claude_output.mp3');
-
-  // Save chat
   chatHistory.push({ user: text, claude: reply, platform: 'frontend' });
   if (chatHistory.length > 7) chatHistory.shift();
 
@@ -76,14 +83,8 @@ app.get('/claude-speak', async (req, res) => {
     return res.status(500).send('Voice generation failed.');
   }
 
-  res.json({
-    reply,
-    audio: '/uploads/claude_output.mp3',
-    history: chatHistory
-  });
+  res.json({ reply, audio: '/uploads/claude_output.mp3', history: chatHistory });
 });
-
-
 
 app.post('/whatsapp', async (req, res) => {
   const incomingMsg = req.body.Body;
@@ -100,32 +101,25 @@ app.post('/whatsapp', async (req, res) => {
   } else if (incomingMsg) {
     const lowerText = incomingMsg.toLowerCase();
 
-    // ✅ Check for "last whatsapp" request
     if (lowerText.includes("last whatsapp") || lowerText.includes("previous whatsapp")) {
-      const lastWhatsapp = chatHistory
-        .filter(entry => entry.platform === 'whatsapp')
-        .slice(-5); // last 5
-
+      const lastWhatsapp = chatHistory.filter(entry => entry.platform === 'whatsapp').slice(-5);
       if (lastWhatsapp.length === 0) {
         twiml.message("📭 No previous WhatsApp messages found.");
       } else {
-        let replyMsg = `📜 Last ${lastWhatsapp.length} WhatsApp message${lastWhatsapp.length > 1 ? 's' : ''}:\n`;
+        let replyMsg = `📜 Last ${lastWhatsapp.length} WhatsApp message${lastWhatsapp.length > 1 ? 's' : ''}:
+`;
         lastWhatsapp.forEach((entry, i) => {
-          replyMsg += `\n${i + 1}. 👤 You: "${entry.user}"\n🤖 Claude: "${entry.claude || 'No reply'}"\n`;
+          replyMsg += `\n${i + 1}. 👤 You: \"${entry.user}\"\n🤖 Claude: \"${entry.claude || 'No reply'}\"\n`;
         });
         twiml.message(replyMsg);
       }
     } else {
-      // 🧠 Get Claude reply
       const reply = await getClaudeReply(incomingMsg);
-
-      // 💬 Save in chat history
       chatHistory.push({ user: incomingMsg, claude: reply, platform: 'whatsapp' });
       if (chatHistory.length > 7) chatHistory.shift();
 
-      // 🔊 Generate voice and send
       await generateSpeech(reply, 'output.mp3');
-      twiml.message(`Claude: "${reply}"\n🔊 Sending voice reply...`);
+      twiml.message(`Claude: \"${reply}\"\n🔊 Sending voice reply...`);
 
       setTimeout(async () => {
         await sendVoiceMessage(reply, 'output.mp3');
@@ -139,8 +133,8 @@ app.post('/whatsapp', async (req, res) => {
   res.send(twiml.toString());
 });
 
+require('./elevenlabs/telegram');
 
-// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

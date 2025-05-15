@@ -1,4 +1,4 @@
-// elevenlabs/claude.js
+
 const axios = require('axios');
 require('dotenv').config();
 
@@ -7,13 +7,13 @@ const MCP_API_KEY = process.env.MCP_API_KEY;
 async function getClaudeReply(prompt) {
   console.log("📩 Prompt received:", prompt);
 
-  // 🧠 Check for special keyword "Akash"
+  
   if (/akash/i.test(prompt)) {
     return "Hi Akash! I'm Claude, your friendly assistant.";
   }
 
   try {
-    // ⚡ Attempt Claude real API call
+    
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
@@ -35,7 +35,7 @@ async function getClaudeReply(prompt) {
   } catch (err) {
     console.error('❌ Claude Error:', err.response?.data || err.message);
 
-    // ⛔ If credits are exhausted or key is invalid, fallback
+    
     if (
       err.response?.data?.error?.message?.includes('credit balance') ||
       err.response?.status === 401
@@ -47,7 +47,7 @@ async function getClaudeReply(prompt) {
   }
 }
 
-// 🔁 Fallback demo replies
+// Fallback demo replies
 function getFallbackReply() {
   const fakeReplies = [
     "This is a simulated reply from Claude AI.",

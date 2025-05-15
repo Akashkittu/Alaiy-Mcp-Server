@@ -153,7 +153,7 @@
       text-align: left;
     }
 
-    /* 🌙 Dark mode styles */
+    
     body.dark-mode {
       background: linear-gradient(135deg, #1c1c1c, #2c2c2c);
       color: #f0f0f0;
@@ -191,7 +191,7 @@
 </head>
 <body>
 
-  <!-- 🌗 Theme Toggle -->
+  
   <button id="themeToggle">🌙 Dark Mode</button>
 
   <div class="container">
@@ -217,7 +217,7 @@
     chatBox.id = "chatBox";
     form.appendChild(chatBox);
 
-    // 💬 Submit to Claude + TTS
+    
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const text = document.getElementById('text').value.trim();
@@ -225,7 +225,7 @@
       await fetchClaudeVoice(text);
     });
 
-    // 🔊 TTS only
+    
     async function generateVoice() {
       const text = document.getElementById('text').value.trim();
       if (!text) return;
@@ -240,7 +240,7 @@
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
 
-        // ✅ NEW: update chat box visually with "You" and "Claude" entries
+        
         const userMsg = document.createElement('div');
         userMsg.classList.add('message', 'user-message');
         userMsg.innerHTML = `<strong>👤 You:</strong><br>${text}`;
@@ -253,7 +253,7 @@
         chatBox.appendChild(aiMsg);
         chatBox.scrollTop = chatBox.scrollHeight;
 
-        // ✅ Show voice player and text feedback
+        
         replyText.textContent = `🗣️ Voice Generated: "${text}"`;
         replyText.classList.remove('hidden');
         audioPlayer.src = url;
@@ -267,7 +267,7 @@
     }
 
 
-    // 🧠 Claude + Voice + Chat history
+    
     async function fetchClaudeVoice(text) {
       statusMsg.classList.remove('hidden');
       replyText.classList.add('hidden');
@@ -293,7 +293,7 @@
       }
     }
 
-    // 💬 Update chat bubble history
+    //  Update chat bubble history
     function updateChatBox(history) {
       chatBox.innerHTML = '';
       history.forEach(entry => {
@@ -311,7 +311,7 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // 🌙 Theme Toggle
+    // Theme Toggle
     const themeBtn = document.getElementById('themeToggle');
     themeBtn.addEventListener('click', () => {
       document.body.classList.toggle('dark-mode');

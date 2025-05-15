@@ -46,7 +46,7 @@ async function generateSpeech(text, filename = 'output.mp3') {
     });
   } catch (error) {
     console.error('❌ Error generating speech from ElevenLabs:', error.response?.data || error.message);
-    return null; // return null on failure
+    return null; 
   }
 }
 

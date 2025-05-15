@@ -7,7 +7,7 @@ dotenv.config();
 const getClaudeReply = require('./claude');
 const generateSpeech = require('./voice');
 
-const telegramHistory = []; // ✅ Add this to store last chats
+const telegramHistory = []; 
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 

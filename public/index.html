@@ -225,12 +225,14 @@
       <textarea id="text" rows="5" placeholder="Ask me anything..." required></textarea><br>
       <button type="submit">🧠 Ask Claude</button>
       <button type="button" onclick="generateVoice()">🗣️ Generate Voice Only</button>
+      <button type="button" onclick="startListening()">🎤 Speak</button>
       <div class="status hidden" id="statusMessage">
         <span class="spinner"></span>Processing...
       </div>
       <div id="replyText" class="status hidden"></div>
       <audio id="audioPlayer" controls class="hidden"></audio>
     </form>
+
   </div>
 
   <script>
@@ -245,10 +247,14 @@
     
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const text = document.getElementById('text').value.trim();
+      const textArea = document.getElementById('text'); 
+      const text = textArea.value.trim();
       if (!text) return;
+
       await fetchClaudeVoice(text);
+      textArea.value = ''; 
     });
+
 
     
     async function generateVoice() {
@@ -334,6 +340,33 @@
         chatBox.appendChild(aiMsg);
       });
       chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    function startListening() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        const speechText = event.results[0][0].transcript;
+        document.getElementById('text').value = speechText;
+      };
+
+      recognition.onerror = (event) => {
+        console.error('🎤 Speech recognition error:', event.error);
+        alert('Speech recognition failed. Please try again.');
+      };
+
+      recognition.onstart = () => {
+        statusMsg.classList.remove('hidden');
+        statusMsg.innerHTML = `<span class="spinner"></span>Listening...`;
+      };
+
+      recognition.onend = () => {
+        statusMsg.classList.add('hidden');
+      };
+
+      recognition.start();
     }
 
     // Theme Toggle

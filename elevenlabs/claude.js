@@ -47,7 +47,7 @@ async function getClaudeReply(prompt) {
   }
 }
 
-// Fallback demo replies
+// Fallback demo replie
 function getFallbackReply() {
   const fakeReplies = [
     "This is a simulated reply from Claude AI.",

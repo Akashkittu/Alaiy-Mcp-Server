@@ -45,11 +45,31 @@ app.get('/claude-speak', async (req, res) => {
   const text = req.query.text;
   if (!text) return res.status(400).send('Text is required.');
 
-  const reply = await getClaudeReply(text);
+  const lowerText = text.toLowerCase();
+  let reply;
+
+  // ✅ Check for WhatsApp history request
+  if (lowerText.includes("last whatsapp") || lowerText.includes("previous whatsapp")) {
+    const lastWhatsapp = chatHistory
+      .filter(entry => entry.platform === 'whatsapp')
+      .slice(-5);
+
+    if (lastWhatsapp.length === 0) {
+      reply = "📭 No previous WhatsApp messages found.";
+    } else {
+      reply = `📜 Last ${lastWhatsapp.length} WhatsApp message${lastWhatsapp.length > 1 ? 's' : ''}:\n`;
+      lastWhatsapp.forEach((entry, i) => {
+        reply += `\n${i + 1}. 👤 You: "${entry.user}"\n🤖 Claude: "${entry.claude || 'No reply'}"\n`;
+      });
+    }
+  } else {
+    reply = await getClaudeReply(text);
+  }
+
   const voicePath = await generateSpeech(reply, 'claude_output.mp3');
 
-  // Update in-memory history
-  chatHistory.push({ user: text, claude: reply });
+  // Save chat
+  chatHistory.push({ user: text, claude: reply, platform: 'frontend' });
   if (chatHistory.length > 7) chatHistory.shift();
 
   if (!voicePath) {
@@ -62,6 +82,7 @@ app.get('/claude-speak', async (req, res) => {
     history: chatHistory
   });
 });
+
 
 
 app.post('/whatsapp', async (req, res) => {
@@ -77,19 +98,39 @@ app.post('/whatsapp', async (req, res) => {
     console.log(`🎤 Voice message received: ${mediaUrl} (${mediaType})`);
     twiml.message("🎧 Thanks! I received your voice message.");
   } else if (incomingMsg) {
-    // 🧠 Get Claude reply
-    const reply = await getClaudeReply(incomingMsg);
+    const lowerText = incomingMsg.toLowerCase();
 
-    // 🔊 Generate voice from reply and save as output.mp3
-    await generateSpeech(reply, 'output.mp3');
+    // ✅ Check for "last whatsapp" request
+    if (lowerText.includes("last whatsapp") || lowerText.includes("previous whatsapp")) {
+      const lastWhatsapp = chatHistory
+        .filter(entry => entry.platform === 'whatsapp')
+        .slice(-5); // last 5
 
-    // ✅ Send text reply to user
-    twiml.message(`Claude: "${reply}"\n🔊 Sending voice reply...`);
+      if (lastWhatsapp.length === 0) {
+        twiml.message("📭 No previous WhatsApp messages found.");
+      } else {
+        let replyMsg = `📜 Last ${lastWhatsapp.length} WhatsApp message${lastWhatsapp.length > 1 ? 's' : ''}:\n`;
+        lastWhatsapp.forEach((entry, i) => {
+          replyMsg += `\n${i + 1}. 👤 You: "${entry.user}"\n🤖 Claude: "${entry.claude || 'No reply'}"\n`;
+        });
+        twiml.message(replyMsg);
+      }
+    } else {
+      // 🧠 Get Claude reply
+      const reply = await getClaudeReply(incomingMsg);
 
-    
-    setTimeout(async () => {
-      await sendVoiceMessage(reply, 'output.mp3'); // this sends the voice message
-    }, 1000);
+      // 💬 Save in chat history
+      chatHistory.push({ user: incomingMsg, claude: reply, platform: 'whatsapp' });
+      if (chatHistory.length > 7) chatHistory.shift();
+
+      // 🔊 Generate voice and send
+      await generateSpeech(reply, 'output.mp3');
+      twiml.message(`Claude: "${reply}"\n🔊 Sending voice reply...`);
+
+      setTimeout(async () => {
+        await sendVoiceMessage(reply, 'output.mp3');
+      }, 1000);
+    }
   } else {
     twiml.message("❓ Sorry, I couldn't understand your message.");
   }
@@ -97,6 +138,7 @@ app.post('/whatsapp', async (req, res) => {
   res.set('Content-Type', 'text/xml');
   res.send(twiml.toString());
 });
+
 
 // ✅ Start server
 app.listen(PORT, () => {

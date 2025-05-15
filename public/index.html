@@ -240,18 +240,32 @@
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
 
+        // ✅ NEW: update chat box visually with "You" and "Claude" entries
+        const userMsg = document.createElement('div');
+        userMsg.classList.add('message', 'user-message');
+        userMsg.innerHTML = `<strong>👤 You:</strong><br>${text}`;
+
+        const aiMsg = document.createElement('div');
+        aiMsg.classList.add('message', 'claude-message');
+        aiMsg.innerHTML = `<strong>🤖 Claude (voice only):</strong><br>${text}`;
+
+        chatBox.appendChild(userMsg);
+        chatBox.appendChild(aiMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // ✅ Show voice player and text feedback
         replyText.textContent = `🗣️ Voice Generated: "${text}"`;
         replyText.classList.remove('hidden');
         audioPlayer.src = url;
         audioPlayer.classList.remove('hidden');
-        
-
+        audioPlayer.play().catch(e => console.warn('Autoplay blocked:', e));
         statusMsg.innerHTML = '✅ Voice ready!';
       } catch (err) {
         console.error(err);
         statusMsg.innerHTML = '❌ Error generating voice.';
       }
     }
+
 
     // 🧠 Claude + Voice + Chat history
     async function fetchClaudeVoice(text) {

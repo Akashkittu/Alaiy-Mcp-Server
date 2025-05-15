@@ -9,7 +9,7 @@ dotenv.config();
 const generateSpeech = require(path.join(__dirname, 'elevenlabs', 'voice'));
 const getClaudeReply = require(path.join(__dirname, 'elevenlabs', 'claude'));
 const sendVoiceMessage = require(path.join(__dirname, 'elevenlabs', 'twilio'));
-const { telegramHistory } = require('./elevenlabs/telegram'); // ✅ Import telegram chat history
+const { telegramHistory } = require('./elevenlabs/telegram'); 
 
 const app = express();
 const PORT = 3000;
